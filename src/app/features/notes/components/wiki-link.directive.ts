@@ -379,28 +379,8 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
     this.previewElements.push(preview);
     this.renderer.addClass(preview, 'wiki-link-preview');
 
-    // Add loading state
-    const loadingText = this.renderer.createText('Loading preview...');
-    this.renderer.appendChild(preview, loadingText);
-
-    // Position the preview
+    // Position the preview (but don't append to body yet - wait for content to load)
     this.positionPreview(linkElement, preview);
-
-    // Append to body (wait for body to be available if needed)
-    const appendToBody = () => {
-      if (document.body) {
-        this.renderer.appendChild(document.body, preview);
-      } else {
-        // Wait for DOM to be ready
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', appendToBody, { once: true });
-        } else {
-          // Fallback: try again after a short delay
-          setTimeout(appendToBody, 10);
-        }
-      }
-    };
-    appendToBody();
 
     // Add hover listeners to keep preview open when hovering over it
     const previewMouseEnter = this.renderer.listen(
@@ -466,10 +446,6 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
       next: (htmlContent) => {
         // Check if preview still exists (user might have moved away)
         if (this.previewElements.includes(preview)) {
-          // Clear loading text
-          while (preview.firstChild) {
-            this.renderer.removeChild(preview, preview.firstChild);
-          }
 
           // Get note metadata for title
           const note = this.markdownService.getNoteById(noteId);
@@ -546,6 +522,22 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
 
           this.renderer.appendChild(preview, contentElement);
 
+          // Now that content is loaded, append preview to body
+          const appendToBody = () => {
+            if (document.body && this.previewElements.includes(preview)) {
+              this.renderer.appendChild(document.body, preview);
+            } else if (!document.body) {
+              // Wait for DOM to be ready
+              if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', appendToBody, { once: true });
+              } else {
+                // Fallback: try again after a short delay
+                setTimeout(appendToBody, 10);
+              }
+            }
+          };
+          appendToBody();
+
           // Set up wiki-link hover listeners on the preview content for nested previews
           this.setupWikiLinkHoverListeners(contentElement, true);
 
@@ -556,11 +548,24 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
       error: () => {
         // Check if preview still exists
         if (this.previewElements.includes(preview)) {
-          while (preview.firstChild) {
-            this.renderer.removeChild(preview, preview.firstChild);
-          }
           const errorText = this.renderer.createText('Failed to load preview');
           this.renderer.appendChild(preview, errorText);
+          
+          // Append error preview to body so user can see the error
+          const appendToBody = () => {
+            if (document.body && this.previewElements.includes(preview)) {
+              this.renderer.appendChild(document.body, preview);
+            } else if (!document.body) {
+              // Wait for DOM to be ready
+              if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', appendToBody, { once: true });
+              } else {
+                // Fallback: try again after a short delay
+                setTimeout(appendToBody, 10);
+              }
+            }
+          };
+          appendToBody();
         }
       },
     });
