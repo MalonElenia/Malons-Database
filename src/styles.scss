@@ -161,7 +161,9 @@ a {
   --code-bg: rgb(50, 50, 50);
 
   // Table styling
-  --table-header-bg: rgb(50, 50, 50);
+  --table-header-bg: rgba(40, 40, 40, 0.2);
+  --table-row-even-bg: rgba(80, 73, 69, 0.2);
+  --table-row-odd-bg: rgba(80, 73, 69, 0.4);
 
   // Scrollbar - orange with good contrast
   --scrollbar-thumb: rgb(255, 160, 100);
@@ -211,7 +213,9 @@ html[data-theme="light"] {
   --code-bg: #f4ede3;
 
   // Table styling
-  --table-header-bg: #efebe5;
+  --table-header-bg: rgba(40, 40, 40, 0.2);
+  --table-row-even-bg: rgba(80, 73, 69, 0.2);
+  --table-row-odd-bg: rgba(80, 73, 69, 0.4);
 
   // Scrollbar - orange tinted
   --scrollbar-thumb: rgb(231, 138, 78);
@@ -261,7 +265,9 @@ html[data-theme="dark"] {
   --code-bg: rgb(50, 50, 50);
 
   // Table styling
-  --table-header-bg: rgb(50, 50, 50);
+  --table-header-bg: rgba(40, 40, 40, 0.2);
+  --table-row-even-bg: rgba(80, 73, 69, 0.2);
+  --table-row-odd-bg: rgba(80, 73, 69, 0.4);
 
   // Scrollbar - orange with good contrast
   --scrollbar-thumb: rgb(255, 160, 100);

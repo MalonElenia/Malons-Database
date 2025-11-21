@@ -239,6 +239,15 @@
   color: var(--primary-color) !important;
 }
 
+/* Alternating row colors for better readability */
+.note-content ::ng-deep tbody tr:nth-child(even) {
+  background-color: var(--table-row-even-bg, rgba(0, 0, 0, 0.05));
+}
+
+.note-content ::ng-deep tbody tr:nth-child(odd) {
+  background-color: var(--table-row-odd-bg, transparent);
+}
+
 /* Custom scrollbar */
 .note-viewer::-webkit-scrollbar {
   width: 10px;
