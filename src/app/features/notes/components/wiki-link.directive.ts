@@ -522,10 +522,22 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
 
           this.renderer.appendChild(preview, contentElement);
 
-          // Now that content is loaded, append preview to body
+          // Now that content is loaded, append preview to body with animation
           const appendToBody = () => {
             if (document.body && this.previewElements.includes(preview)) {
+              // Set initial state for fade-in animation
+              this.renderer.setStyle(preview, 'opacity', '0');
+              this.renderer.setStyle(preview, 'transform', 'translateY(-8px)');
               this.renderer.appendChild(document.body, preview);
+              
+              // Trigger fade-in animation after a brief delay (to ensure styles are applied)
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  this.renderer.setStyle(preview, 'transition', 'opacity 0.2s ease-out, transform 0.2s ease-out');
+                  this.renderer.setStyle(preview, 'opacity', '1');
+                  this.renderer.setStyle(preview, 'transform', 'translateY(0)');
+                });
+              });
             } else if (!document.body) {
               // Wait for DOM to be ready
               if (document.readyState === 'loading') {
@@ -551,10 +563,22 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
           const errorText = this.renderer.createText('Failed to load preview');
           this.renderer.appendChild(preview, errorText);
           
-          // Append error preview to body so user can see the error
+          // Append error preview to body so user can see the error (with animation)
           const appendToBody = () => {
             if (document.body && this.previewElements.includes(preview)) {
+              // Set initial state for fade-in animation
+              this.renderer.setStyle(preview, 'opacity', '0');
+              this.renderer.setStyle(preview, 'transform', 'translateY(-8px)');
               this.renderer.appendChild(document.body, preview);
+              
+              // Trigger fade-in animation
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  this.renderer.setStyle(preview, 'transition', 'opacity 0.2s ease-out, transform 0.2s ease-out');
+                  this.renderer.setStyle(preview, 'opacity', '1');
+                  this.renderer.setStyle(preview, 'transform', 'translateY(0)');
+                });
+              });
             } else if (!document.body) {
               // Wait for DOM to be ready
               if (document.readyState === 'loading') {
@@ -722,7 +746,7 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Hides and removes the preview tooltip
+   * Hides and removes the preview tooltip with fade-out animation
    * @param previewToHide - Specific preview to hide. If provided, also hides all nested previews after it.
    *                        If not provided, hides all previews.
    */
@@ -738,30 +762,46 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
           if (this.mouseInsidePreview === preview) {
             this.mouseInsidePreview = null;
           }
-          this.cleanupPreviewListeners(preview);
-          // Remove from DOM
-          if (document.body) {
-            this.renderer.removeChild(document.body, preview);
-          }
+          
+          // Animate fade-out before removing
+          this.animatePreviewOut(preview);
         });
       }
     } else {
       // Hide all previews
-      this.previewElements.forEach((preview) => {
-        this.cleanupPreviewListeners(preview);
-        // Remove from DOM
-        if (document.body) {
-          this.renderer.removeChild(document.body, preview);
-        }
-      });
+      const allPreviews = [...this.previewElements];
       this.previewElements = [];
       this.mouseInsidePreview = null;
+      
+      allPreviews.forEach((preview) => {
+        // Animate fade-out before removing
+        this.animatePreviewOut(preview);
+      });
     }
 
     // Clear current hover target if all previews are gone
     if (this.previewElements.length === 0) {
       this.currentHoverTarget = null;
     }
+  }
+
+  /**
+   * Animates a preview element out and removes it from the DOM
+   */
+  private animatePreviewOut(preview: HTMLElement): void {
+    // Set fade-out animation
+    this.renderer.setStyle(preview, 'transition', 'opacity 0.15s ease-in, transform 0.15s ease-in');
+    this.renderer.setStyle(preview, 'opacity', '0');
+    this.renderer.setStyle(preview, 'transform', 'translateY(-8px)');
+    
+    // Wait for animation to complete before removing from DOM
+    setTimeout(() => {
+      this.cleanupPreviewListeners(preview);
+      // Remove from DOM
+      if (document.body && preview.parentNode) {
+        this.renderer.removeChild(document.body, preview);
+      }
+    }, 150); // Match the transition duration
   }
 
   /**
