@@ -309,7 +309,67 @@ export class SearchService {
         };
       });
 
-    this.searchResultsSubject.next(searchResults);
+    // Sort results by match quality
+    const sortedResults = this.sortByMatchQuality(searchResults, normalizedQuery);
+    
+    this.searchResultsSubject.next(sortedResults);
+  }
+
+  /**
+   * Sort search results by match quality
+   * Priority: exact filename > exact word in filename > fuzzy filename > content matches
+   * 
+   * Design rationale:
+   * - Users searching for "Orc" most likely want the file named "Orc.md"
+   * - Exact matches should always appear first
+   * - Filename matches are more relevant than content matches
+   * - Within each category, use Fuse.js score for ordering
+   */
+  private sortByMatchQuality(results: SearchResult[], query: string): SearchResult[] {
+    return results.sort((a, b) => {
+      const aTitle = a.note.title.toLowerCase();
+      const bTitle = b.note.title.toLowerCase();
+      const queryLower = query.toLowerCase();
+
+      // Priority 1: Exact filename match (highest priority)
+      const aExactMatch = aTitle === queryLower;
+      const bExactMatch = bTitle === queryLower;
+      if (aExactMatch && !bExactMatch) return -1;
+      if (!aExactMatch && bExactMatch) return 1;
+      if (aExactMatch && bExactMatch) return a.score - b.score;
+
+      // Priority 2: Filename starts with query
+      const aStartsWith = aTitle.startsWith(queryLower);
+      const bStartsWith = bTitle.startsWith(queryLower);
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+      if (aStartsWith && bStartsWith) return a.score - b.score;
+
+      // Priority 3: Exact word match in filename (word boundary)
+      const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const wordBoundaryRegex = new RegExp(`\\b${escapedQuery}\\b`, 'i');
+      const aWordMatch = wordBoundaryRegex.test(a.note.title);
+      const bWordMatch = wordBoundaryRegex.test(b.note.title);
+      if (aWordMatch && !bWordMatch) return -1;
+      if (!aWordMatch && bWordMatch) return 1;
+      if (aWordMatch && bWordMatch) return a.score - b.score;
+
+      // Priority 4: Filename contains query as substring
+      const aContains = aTitle.includes(queryLower);
+      const bContains = bTitle.includes(queryLower);
+      if (aContains && !bContains) return -1;
+      if (!aContains && bContains) return 1;
+      if (aContains && bContains) return a.score - b.score;
+
+      // Priority 5: Title match vs content match
+      const aTitleMatch = !!a.titleMatch;
+      const bTitleMatch = !!b.titleMatch;
+      if (aTitleMatch && !bTitleMatch) return -1;
+      if (!aTitleMatch && bTitleMatch) return 1;
+
+      // Priority 6: Sort by Fuse.js score (lower is better)
+      return a.score - b.score;
+    });
   }
 
   /**

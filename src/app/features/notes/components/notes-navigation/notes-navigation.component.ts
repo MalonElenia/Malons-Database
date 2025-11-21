@@ -108,8 +108,9 @@ export class NotesNavigationComponent implements OnInit, OnDestroy {
       return this.allTreeNodes();
     }
 
-    // Build a filtered tree showing only matched notes and their parent folders
-    return this.buildFilteredTree(this.allTreeNodes(), results);
+    // When searching, show a flat list of results in order of relevance
+    // This provides better UX than maintaining tree hierarchy
+    return results.map((result) => result.note as NoteTreeNode);
   });
 
   // Type guards exposed to template
@@ -261,11 +262,18 @@ export class NotesNavigationComponent implements OnInit, OnDestroy {
 
   /**
    * Builds a filtered tree showing only matched notes and their parent folders
+   * Preserves the search result order for better relevance
    */
   private buildFilteredTree(
     nodes: NoteTreeNode[],
     results: SearchResult[]
   ): NoteTreeNode[] {
+    // Create a map of note ID to search result index for ordering
+    const noteOrderMap = new Map<string, number>();
+    results.forEach((result, index) => {
+      noteOrderMap.set(result.note.id, index);
+    });
+
     const matchedNoteIds = new Set(results.map((r) => r.note.id));
     const filteredNodes: NoteTreeNode[] = [];
 
@@ -289,6 +297,30 @@ export class NotesNavigationComponent implements OnInit, OnDestroy {
         }
       }
     }
+
+    // Sort the filtered nodes to match search result order
+    // Folders come first (to maintain tree structure), then notes by search relevance
+    filteredNodes.sort((a, b) => {
+      const aIsFolder = isFolder(a);
+      const bIsFolder = isFolder(b);
+
+      // Keep folders before notes
+      if (aIsFolder && !bIsFolder) return -1;
+      if (!aIsFolder && bIsFolder) return 1;
+
+      // If both are folders, keep original order
+      if (aIsFolder && bIsFolder) return 0;
+
+      // If both are notes, sort by search result order
+      const aNote = isNote(a) ? a : null;
+      const bNote = isNote(b) ? b : null;
+      
+      if (!aNote || !bNote) return 0;
+      
+      const aOrder = noteOrderMap.get(aNote.id) ?? Infinity;
+      const bOrder = noteOrderMap.get(bNote.id) ?? Infinity;
+      return aOrder - bOrder;
+    });
 
     return filteredNodes;
   }
