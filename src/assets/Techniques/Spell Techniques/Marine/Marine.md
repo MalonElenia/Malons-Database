@@ -1,0 +1,1 @@
+Marine Sorceries are spells focusing on aquatic travel and water-based magics with a supportive focus. They are derived from sea dragons, river spirits, and fey.

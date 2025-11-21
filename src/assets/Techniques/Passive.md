@@ -1,0 +1,1 @@
+A Passive [[Technique]] grants its abilities at all times, and does not require any awareness or actions from the user beyond preparing it.

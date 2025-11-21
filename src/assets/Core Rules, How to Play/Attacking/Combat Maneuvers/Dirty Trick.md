@@ -1,0 +1,1 @@
+Apply [[Clumsy]] 2, [[Sickened]] 2 or [[Blurred Vision]] to a creature. They must spend a [[Standard Action]] to get rid of the condition.
