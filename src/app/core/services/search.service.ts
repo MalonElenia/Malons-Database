@@ -176,15 +176,22 @@ export class SearchService {
     // by filtering results that don't contain the exact query as substring
     const fuseResults = this.fuse.search(query);
     const normalizedQuery = query.toLowerCase().trim();
+    
+    // Hoist calculations outside the filter loop for better performance
+    const queryLen = normalizedQuery.length;
+    const maxAllowedDifference = Math.ceil(queryLen * 0.4);
+    const isLongQuery = queryLen >= 5;
+    const minMatchRatio = 0.7;
+    const minMatchQuality = 0.7;
 
     const searchResults: SearchResult[] = fuseResults
       .filter((result) => {
         if (!result.item.note) return false;
         
-        // Check match quality to prevent poor matches
-        const entry = result.item;
         const matches = result.matches || [];
-        const queryLen = normalizedQuery.length;
+        
+        // Early exit if no matches
+        if (matches.length === 0) return false;
         
         // For each match, verify the quality
         for (const match of matches) {
@@ -209,14 +216,10 @@ export class SearchService {
           
           const matchSpan = maxIdx - minIdx + 1;
           
-          // Extract the actual matched portion from the text
-          const matchedPortion = matchedText.substring(minIdx, maxIdx + 1);
-          
           // RULE 1: Match span should be close to query length
           // Prevents "weakness" (8 chars) from matching "eas" (3 chars)
           // Allow up to 40% difference for typos (e.g., "weakness" can match "weaknes")
           const spanDifference = Math.abs(matchSpan - queryLen);
-          const maxAllowedDifference = Math.ceil(queryLen * 0.4);
           
           if (spanDifference > maxAllowedDifference) {
             continue; // Match span too different from query length
@@ -224,7 +227,7 @@ export class SearchService {
           
           // RULE 2: For longer queries (5+ chars), require high similarity
           // Prevents "weakness" from matching scattered chars in other words
-          if (queryLen >= 5) {
+          if (isLongQuery) {
             // Calculate how many characters actually match
             let matchedChars = 0;
             for (const [start, end] of match.indices) {
@@ -233,7 +236,7 @@ export class SearchService {
             
             // At least 70% of query characters must match for longer queries
             const matchRatio = matchedChars / queryLen;
-            if (matchRatio < 0.7) {
+            if (matchRatio < minMatchRatio) {
               continue;
             }
           }
@@ -241,7 +244,7 @@ export class SearchService {
           // RULE 3: Match quality - query length should be similar to match span
           const matchQuality = Math.min(queryLen, matchSpan) / Math.max(queryLen, matchSpan);
           
-          if (matchQuality >= 0.7) {
+          if (matchQuality >= minMatchQuality) {
             return true;
           }
         }

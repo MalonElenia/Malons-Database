@@ -143,16 +143,17 @@ export class NotesNavigationComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Set up debounced search with 200ms delay
+    // Set up debounced search with 300ms delay
     this.searchSubscription = this.searchInputSubject
-      .pipe(debounceTime(200))
+      .pipe(debounceTime(300))
       .subscribe((query) => {
         this.searchService.search(query);
 
         // Auto-expand all folders when searching
         if (query.trim()) {
           this.expandAllFolders(this.allTreeNodes());
-          this.allTreeNodes.set([...this.allTreeNodes()]);
+          // Trigger signal update without copying array
+          this.allTreeNodes.update(n => n);
         }
       });
 
@@ -172,8 +173,8 @@ export class NotesNavigationComponent implements OnInit, OnDestroy {
             // Also strip query params and fragments
             const noteId = decodeURIComponent(match[1].split('?')[0].split('#')[0]);
             this.expandPathToNote(tree, noteId);
-            // Trigger update by creating new reference
-            this.allTreeNodes.set([...tree]);
+            // Trigger signal update without copying array
+            this.allTreeNodes.update(n => n);
           }
         }
       });
@@ -203,9 +204,9 @@ export class NotesNavigationComponent implements OnInit, OnDestroy {
   protected toggleFolder(folder: NoteTreeNode): void {
     if (isFolder(folder)) {
       folder.expanded = !folder.expanded;
-      // Trigger change detection by creating new array reference
-      // Shallow copy is efficient for large trees
-      this.allTreeNodes.set([...this.allTreeNodes()]);
+      // Trigger signal update without copying array
+      // Since we mutate the folder object, just update the signal reference
+      this.allTreeNodes.update(nodes => nodes);
     }
   }
 
@@ -246,8 +247,8 @@ export class NotesNavigationComponent implements OnInit, OnDestroy {
   protected expandAll(): void {
     const nodes = this.allTreeNodes();
     this.expandAllFolders(nodes);
-    // Trigger change detection by creating new array reference
-    this.allTreeNodes.set([...nodes]);
+    // Trigger signal update without copying array
+    this.allTreeNodes.update(n => n);
   }
 
   /**
@@ -256,8 +257,8 @@ export class NotesNavigationComponent implements OnInit, OnDestroy {
   protected collapseAll(): void {
     const nodes = this.allTreeNodes();
     this.collapseAllFolders(nodes);
-    // Trigger change detection by creating new array reference
-    this.allTreeNodes.set([...nodes]);
+    // Trigger signal update without copying array
+    this.allTreeNodes.update(n => n);
   }
 
   /**

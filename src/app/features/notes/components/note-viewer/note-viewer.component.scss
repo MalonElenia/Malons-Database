@@ -40,7 +40,9 @@
   max-width: 700px;
   margin: 0 auto;
   opacity: 0;
-  transition: opacity 0.125s ease-in-out;
+  // Material Design standard easing curve for smoother, more natural motion
+  // Accelerates quickly, decelerates smoothly (mimics real-world physics)
+  transition: opacity 0.15s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
 .note-container.visible {

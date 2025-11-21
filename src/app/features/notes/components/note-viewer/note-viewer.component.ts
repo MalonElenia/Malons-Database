@@ -66,6 +66,7 @@ export class NoteViewerComponent implements OnInit, AfterViewChecked {
   private currentNoteId: string | null = null;
   private calculatorComponents: ComponentRef<CalculatorComponent>[] = [];
   private lastProcessedContent = '';
+  private highlightCache = new Map<string, string>();
 
   constructor() {
     // Use effect to watch for content changes and render calculators
@@ -85,6 +86,7 @@ export class NoteViewerComponent implements OnInit, AfterViewChecked {
   });
 
   // Computed content with highlighting applied
+  // Uses caching to avoid redundant DOM manipulation for the same content+query combination
   protected readonly noteContent = computed(() => {
     const content = this.rawContent();
     const query = this.searchQuery();
@@ -93,8 +95,23 @@ export class NoteViewerComponent implements OnInit, AfterViewChecked {
       return this.sanitizer.bypassSecurityTrustHtml(content);
     }
 
+    // Create cache key combining content length and query for fast lookup
+    const cacheKey = `${content.length}-${query}`;
+    
+    if (this.highlightCache.has(cacheKey)) {
+      return this.sanitizer.bypassSecurityTrustHtml(this.highlightCache.get(cacheKey)!);
+    }
+
     // Apply highlighting to the content
     const highlighted = this.highlightSearchTerms(content, query);
+    
+    // Limit cache size to prevent memory issues (keep last 10 entries)
+    if (this.highlightCache.size > 10) {
+      const firstKey = this.highlightCache.keys().next().value;
+      this.highlightCache.delete(firstKey);
+    }
+    
+    this.highlightCache.set(cacheKey, highlighted);
     return this.sanitizer.bypassSecurityTrustHtml(highlighted);
   });
 
@@ -140,8 +157,8 @@ export class NoteViewerComponent implements OnInit, AfterViewChecked {
     // Fade out current content FIRST (before changing anything)
     this.contentVisible.set(false);
 
-    // Track when fade-out completes
-    const fadeOutComplete = new Promise<void>(resolve => setTimeout(resolve, 125));
+    // Track when fade-out completes (matches CSS transition duration)
+    const fadeOutComplete = new Promise<void>(resolve => setTimeout(resolve, 150));
     
     // Start loading content immediately (in parallel with fade-out)
     let loadedNote: any;
