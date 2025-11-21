@@ -117,57 +117,79 @@ export class NoteViewerComponent implements OnInit, AfterViewChecked {
    * 
    * Design decision:
    * - Old content (including icon) fades out completely
-   * - New content loads during the fade-out
-   * - New content (including icon) fades in
-   * - This creates a smooth, continuous transition without icon flickering
+   * - New content loads IN PARALLEL during the fade-out (performance optimization)
+   * - Content swap happens ONLY when opacity is 0 (during the invisible moment)
+   * - New content (including icon) fades in once ready
+   * - This creates a smooth, continuous transition without content popping
    * - Updates SEO meta tags dynamically for each page
+   * 
+   * Performance optimization:
+   * - Content loading starts immediately, not after fade-out completes
+   * - This parallelizes the I/O operation with the animation
+   * - Results in faster perceived transitions, especially for larger notes
+   * 
+   * Visual smoothness:
+   * - Title, icon, and content update only after fade-out completes
+   * - This prevents jarring mid-fade content changes
+   * - User sees old content fade out, then new content fade in
    */
   private loadNote(noteId: string): void {
     this.currentNoteId = noteId;
+    this.error.set(null);
 
-    // Fade out current content (keep icon visible during fade-out)
+    // Fade out current content FIRST (before changing anything)
     this.contentVisible.set(false);
 
-    // Wait for fade-out animation to complete before loading new content
-    setTimeout(() => {
-      this.error.set(null);
-
-      // Get note metadata for title and icon
-      const note = this.markdownService.getNoteById(noteId);
-      if (note) {
-        this.noteTitle.set(note.title);
-        this.noteIcon.set(note.icon);
-        
-        // Update SEO meta tags for the page
-        this.updateMetaTags(note.title, noteId);
-      } else {
-        this.noteTitle.set(noteId);
-        this.noteIcon.set(undefined);
-        
-        // Update with default meta tags
-        this.updateMetaTags(noteId, noteId);
-      }
-
+    // Track when fade-out completes
+    const fadeOutComplete = new Promise<void>(resolve => setTimeout(resolve, 125));
+    
+    // Start loading content immediately (in parallel with fade-out)
+    let loadedNote: any;
+    let loadedHtml: string;
+    let loadedTextContent: string;
+    
+    const contentLoadComplete = new Promise<void>((resolve, reject) => {
+      // Get note metadata for later use
+      loadedNote = this.markdownService.getNoteById(noteId);
+      
       this.markdownService.loadNoteById(noteId).subscribe({
         next: (html) => {
-          // Store raw content for highlighting
-          this.rawContent.set(html);
-          
-          // Extract text content for description (first 160 chars)
-          const textContent = this.extractTextContent(html);
-          this.updateMetaDescription(textContent);
-
-          // Brief delay to ensure DOM is updated, then fade in
-          setTimeout(() => {
-            this.contentVisible.set(true);
-          }, 50);
+          loadedHtml = html;
+          loadedTextContent = this.extractTextContent(html);
+          resolve();
         },
         error: (err) => {
-          this.error.set(`Failed to load note: ${err.message}`);
-          this.contentVisible.set(false);
+          reject(err);
         },
       });
-    }, 125); // Match fade-out duration
+    });
+
+    // Wait for both fade-out animation AND content loading to complete
+    Promise.all([fadeOutComplete, contentLoadComplete])
+      .then(() => {
+        // NOW update all the content at once (while opacity is 0)
+        if (loadedNote) {
+          this.noteTitle.set(loadedNote.title);
+          this.noteIcon.set(loadedNote.icon);
+          this.updateMetaTags(loadedNote.title, noteId);
+        } else {
+          this.noteTitle.set(noteId);
+          this.noteIcon.set(undefined);
+          this.updateMetaTags(noteId, noteId);
+        }
+        
+        this.rawContent.set(loadedHtml);
+        this.updateMetaDescription(loadedTextContent);
+
+        // Brief delay to ensure DOM is updated, then fade in
+        setTimeout(() => {
+          this.contentVisible.set(true);
+        }, 50);
+      })
+      .catch((err) => {
+        this.error.set(`Failed to load note: ${err.message}`);
+        this.contentVisible.set(false);
+      });
   }
 
   /**
