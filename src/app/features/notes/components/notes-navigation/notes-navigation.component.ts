@@ -196,6 +196,38 @@ export class NotesNavigationComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Collapses all folders in the tree recursively
+   */
+  private collapseAllFolders(nodes: NoteTreeNode[]): void {
+    for (const node of nodes) {
+      if (isFolder(node)) {
+        node.expanded = false;
+        this.collapseAllFolders(node.children);
+      }
+    }
+  }
+
+  /**
+   * Public method to expand all folders - accessible from template
+   */
+  protected expandAll(): void {
+    const nodes = this.allTreeNodes();
+    this.expandAllFolders(nodes);
+    // Trigger change detection by creating new array reference
+    this.allTreeNodes.set([...nodes]);
+  }
+
+  /**
+   * Public method to collapse all folders - accessible from template
+   */
+  protected collapseAll(): void {
+    const nodes = this.allTreeNodes();
+    this.collapseAllFolders(nodes);
+    // Trigger change detection by creating new array reference
+    this.allTreeNodes.set([...nodes]);
+  }
+
+  /**
    * Builds a filtered tree showing only matched notes and their parent folders
    */
   private buildFilteredTree(
