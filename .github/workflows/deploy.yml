@@ -57,9 +57,9 @@ jobs:
           fi
           # Copy to 404.html and update base href for GitHub Pages
           cp "$INDEX_FILE" dist/MMM/browser/404.html
-          # Update base href to /Pages-TestV2/ if it's not already set
-          sed -i 's|<base href="/">|<base href="/Pages-TestV2/">|g' dist/MMM/browser/404.html
-          sed -i 's|<base href="">|<base href="/Pages-TestV2/">|g' dist/MMM/browser/404.html
+          # Update base href to /Malons-Database/ if it's not already set
+          sed -i 's|<base href="/">|<base href="/Malons-Database/">|g' dist/MMM/browser/404.html
+          sed -i 's|<base href="">|<base href="/Malons-Database/">|g' dist/MMM/browser/404.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

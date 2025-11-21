@@ -16,7 +16,7 @@ This file contains all project metadata in one place:
   "projectNameShort": "MMM",
   "projectNameSlug": "Malons-Marvelous-Misadventures",
   "projectDescription": "A comprehensive tabletop RPG system...",
-  "projectUrl": "https://yourusername.github.io/Pages-TestV2",
+  "projectUrl": "https://yourusername.github.io/Malons-Database",
   "author": "Malon's Marvelous Misadventures",
   "tagline": "Tabletop RPG System",
   "keywords": "tabletop RPG, role playing game..."

@@ -78,7 +78,7 @@
               "sourceMap": false,
               "extractLicenses": true,
               "outputMode": "static",
-              "baseHref": "/Pages-TestV2/",
+              "baseHref": "/Malons-Database/",
               "ssr": false,
               "namedChunks": true,
               "budgets": [
