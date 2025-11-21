@@ -136,8 +136,13 @@
   margin: 0;
 }
 
+.tree-children-wrapper {
+  overflow: hidden;
+}
+
 .tree-children {
   padding-left: 1.25rem;
+  margin: 0;
 }
 
 .folder-item,
@@ -147,7 +152,7 @@
   padding: 0.5rem 1rem;
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.15s ease;
   color: var(--text-primary, #333);
   text-decoration: none;
   gap: 0.5rem;
@@ -156,6 +161,10 @@
 .folder-item:hover,
 .note-item:hover {
   background-color: var(--hover-bg, rgba(0, 0, 0, 0.05));
+}
+
+.folder-item:active {
+  transform: scale(0.98);
 }
 
 .note-item {
@@ -184,6 +193,7 @@
   flex-shrink: 0;
   color: var(--accent-color, #ff6f00);
   transition: color 0.2s ease;
+  transform-origin: center;
 }
 
 .folder-name {

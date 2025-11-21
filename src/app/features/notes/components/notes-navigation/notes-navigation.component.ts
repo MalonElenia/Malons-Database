@@ -2,6 +2,7 @@ import { Component, inject, signal, OnInit, OnDestroy, computed, ChangeDetection
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { trigger, state, style, transition, animate } from '@angular/animations';
 import { filter, Subject, Subscription, debounceTime } from 'rxjs';
 import { MarkdownService, SearchService, ProjectConfigService } from '../../../../core/services';
 import {
@@ -27,6 +28,7 @@ import { IconifyIconComponent } from '../../../../shared/components/iconify-icon
  * - Material-inspired tree UI without direct Material dependency
  * - Single Responsibility: handles only navigation tree display and interaction
  * - Recursive design follows Open/Closed Principle: extensible to any tree depth
+ * - Smooth animations for expand/collapse transitions enhance UX
  */
 @Component({
   selector: 'app-notes-navigation',
@@ -42,6 +44,36 @@ import { IconifyIconComponent } from '../../../../shared/components/iconify-icon
   templateUrl: './notes-navigation.component.html',
   styleUrl: './notes-navigation.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  animations: [
+    // Smooth expand/collapse animation for folder children
+    trigger('expandCollapse', [
+      state('collapsed', style({
+        height: '0',
+        overflow: 'hidden',
+        opacity: '0',
+      })),
+      state('expanded', style({
+        height: '*',
+        overflow: 'visible',
+        opacity: '1',
+      })),
+      transition('collapsed <=> expanded', [
+        animate('250ms cubic-bezier(0.4, 0.0, 0.2, 1)')
+      ]),
+    ]),
+    // Icon transition animation
+    trigger('folderIconRotate', [
+      state('collapsed', style({
+        transform: 'rotate(0deg)',
+      })),
+      state('expanded', style({
+        transform: 'rotate(0deg)',
+      })),
+      transition('collapsed <=> expanded', [
+        animate('200ms cubic-bezier(0.4, 0.0, 0.2, 1)')
+      ]),
+    ]),
+  ],
 })
 export class NotesNavigationComponent implements OnInit, OnDestroy {
   private readonly markdownService = inject(MarkdownService);

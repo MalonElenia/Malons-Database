@@ -60,23 +60,30 @@
 <ng-template #treeNodeTemplate let-node>
   @if (isFolder(node)) {
   <div class="folder-item" (click)="toggleFolder(node)">
-    <mat-icon class="folder-icon">
+    <mat-icon 
+      class="folder-icon"
+      [@folderIconRotate]="node.expanded ? 'expanded' : 'collapsed'"
+    >
       {{ node.expanded ? "folder_open" : "folder" }}
     </mat-icon>
     <span class="folder-name">{{ node.name }}</span>
   </div>
 
-  @if (node.expanded) {
-  <ul class="tree-children">
-    @for (child of node.children; track trackNode($index, child)) {
-    <li>
-      <ng-container
-        *ngTemplateOutlet="treeNodeTemplate; context: { $implicit: child }"
-      ></ng-container>
-    </li>
-    }
-  </ul>
-  }   } @else if (isNote(node)) {
+  <div 
+    class="tree-children-wrapper"
+    [@expandCollapse]="node.expanded ? 'expanded' : 'collapsed'"
+  >
+    <ul class="tree-children">
+      @for (child of node.children; track trackNode($index, child)) {
+      <li>
+        <ng-container
+          *ngTemplateOutlet="treeNodeTemplate; context: { $implicit: child }"
+        ></ng-container>
+      </li>
+      }
+    </ul>
+  </div>
+  } @else if (isNote(node)) {
   <a
     [routerLink]="['/' + projectSlug, node.id]"
     routerLinkActive="active"
