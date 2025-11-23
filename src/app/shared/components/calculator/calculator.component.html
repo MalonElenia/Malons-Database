@@ -107,9 +107,9 @@
             />
 
             <!-- Current point indicator -->
-            @if (config.inputs && config.inputs.length > 0 && typeof result() === 'number') {
+            @if (getXAxisInput() && typeof result() === 'number') {
               <circle
-                [attr.cx]="toSvgX(inputValues()[config.inputs[0].name], 470)"
+                [attr.cx]="toSvgX(inputValues()[getXAxisInput()!.name], 470)"
                 [attr.cy]="toSvgY(getNumericResult(), 330)"
                 r="6"
                 fill="var(--accent-color, #4a9eff)"
@@ -119,14 +119,14 @@
           </g>
         </svg>
 
-          @if (config.inputs && config.inputs.length > 0) {
+          @if (getXAxisInput()) {
             <div class="y-axis-label">↑ Result</div>
           }
         </div>
 
-        @if (config.inputs && config.inputs.length > 0) {
+        @if (getXAxisInput()) {
           <div class="graph-axis-labels">
-            <div class="x-axis-label">{{ config.inputs[0].label }} →</div>
+            <div class="x-axis-label">{{ getXAxisInput()!.label }} →</div>
           </div>
         }
       </div>

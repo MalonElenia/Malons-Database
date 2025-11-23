@@ -647,6 +647,8 @@ export class MarkdownService {
         config.graph = value === 'true' || value === 'yes';
       } else if (trimmedLine.startsWith('graphPoints:')) {
         config.graphPoints = parseInt(trimmedLine.substring(12).trim(), 10);
+      } else if (trimmedLine.startsWith('graphXAxis:')) {
+        config.graphXAxis = trimmedLine.substring(11).trim();
       } else if (trimmedLine.startsWith('inputs:')) {
         // Start of inputs section
         continue;

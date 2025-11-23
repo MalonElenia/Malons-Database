@@ -26,6 +26,7 @@ interface CalculatorConfig {
   formula: string;
   inputs: CalculatorInput[];
   graph?: boolean;
+  graphXAxis?: string; // Specify which input variable to use for x-axis (defaults to first input)
   graphPoints?: number;
   description?: string;
 }
@@ -126,7 +127,7 @@ export class CalculatorComponent implements OnInit {
   }
 
   /**
-   * Generates graph data points by varying the first input
+   * Generates graph data points by varying the specified x-axis input
    * This creates a simple line graph showing how the output changes
    */
   private generateGraphData(): { x: number; y: number; label: string }[] | null {
@@ -134,23 +135,27 @@ export class CalculatorComponent implements OnInit {
       return null;
     }
 
-    // Increased from 20 to 50 for smoother curves
-    const points = this.config.graphPoints || 50;
-    const firstInput = this.config.inputs[0];
+    const xAxisInput = this.getXAxisInput();
+    if (!xAxisInput) {
+      return null;
+    }
+
+    // Higher point count for smoother curves (especially important for non-linear functions)
+    const points = this.config.graphPoints || 200;
     const currentValues = this.inputValues();
     const data: { x: number; y: number; label: string }[] = [];
 
-    const min = firstInput.min ?? 0;
-    const max = firstInput.max ?? 100;
+    const min = xAxisInput.min ?? 0;
+    const max = xAxisInput.max ?? 100;
     const step = (max - min) / points;
 
     for (let i = 0; i <= points; i++) {
       const x = min + (step * i);
-      const testValues = { ...currentValues, [firstInput.name]: x };
+      const testValues = { ...currentValues, [xAxisInput.name]: x };
       const y = this.evaluateFormula(testValues);
 
       if (typeof y === 'number') {
-        data.push({ x, y, label: firstInput.label });
+        data.push({ x, y, label: xAxisInput.label });
       }
     }
 
@@ -257,6 +262,29 @@ export class CalculatorComponent implements OnInit {
   protected getNumericResult(): number {
     const res = this.result();
     return typeof res === 'number' ? res : 0;
+  }
+
+  /**
+   * Gets the input to use for the x-axis
+   * Returns the specified graphXAxis input, or defaults to the first input
+   */
+  protected getXAxisInput(): CalculatorInput | null {
+    if (!this.config?.inputs || this.config.inputs.length === 0) {
+      return null;
+    }
+
+    // If graphXAxis is specified, find that input
+    if (this.config.graphXAxis) {
+      const xInput = this.config.inputs.find(input => input.name === this.config.graphXAxis);
+      if (xInput) {
+        return xInput;
+      }
+      // If specified input not found, log warning and fall back to first input
+      console.warn(`Graph x-axis input "${this.config.graphXAxis}" not found, using first input`);
+    }
+
+    // Default to first input
+    return this.config.inputs[0];
   }
 }
 

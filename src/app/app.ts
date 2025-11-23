@@ -5,7 +5,7 @@ import { filter, Subscription } from 'rxjs';
 // Layout components (using barrel export for cleaner imports)
 import {
   // HeaderComponent, // Hidden - buttons moved to sidebars
-  FooterComponent,
+  // FooterComponent, // Hidden
   SidebarLeftComponent,
   SidebarRightComponent,
 } from './layout';
@@ -19,7 +19,6 @@ import { ThemeService } from './core/services';
 /**
  * Root application component implementing a responsive layout with:
  * - Collapsible left and right sidebars
- * - Fixed header and footer
  * - Main content area with routing
  * - Theme management (light/dark mode)
  *
@@ -37,7 +36,7 @@ import { ThemeService } from './core/services';
   imports: [
     RouterOutlet,
     // HeaderComponent, // Hidden - buttons moved to sidebars
-    FooterComponent,
+    // FooterComponent, // Hidden
     SidebarLeftComponent,
     SidebarRightComponent,
     MatIconModule,
