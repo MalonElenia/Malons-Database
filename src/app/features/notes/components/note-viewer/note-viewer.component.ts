@@ -108,7 +108,9 @@ export class NoteViewerComponent implements OnInit, AfterViewChecked {
     // Limit cache size to prevent memory issues (keep last 10 entries)
     if (this.highlightCache.size > 10) {
       const firstKey = this.highlightCache.keys().next().value;
-      this.highlightCache.delete(firstKey);
+      if (firstKey !== undefined) {
+        this.highlightCache.delete(firstKey);
+      }
     }
     
     this.highlightCache.set(cacheKey, highlighted);
