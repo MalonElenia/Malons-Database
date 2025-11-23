@@ -7,7 +7,7 @@
 .app-sidebar {
   position: fixed;
   top: 0; // Changed from var(--header-height) since header is hidden
-  bottom: var(--footer-height, 60px); // Stop at footer, don't overlap it
+  bottom: 0; // Footer is hidden
   width: var(--sidebar-width, 280px);
   background-color: var(--sidebar-bg, #ffffff);
   box-shadow: var(--shadow-3, 0 8px 16px rgba(0, 0, 0, 0.2));
