@@ -267,12 +267,40 @@ export class SearchService {
           contentMatch.indices &&
           contentMatch.indices.length > 0
         ) {
-          const firstMatch = contentMatch.indices[0];
           const content = entry.content || '';
+          const contentLower = content.toLowerCase();
+          
+          // Priority 1: Try to find exact substring match (case-insensitive)
+          // This ensures "that speed instead" highlights the actual phrase, not fuzzy matches
+          let matchStart: number;
+          let matchEnd: number;
+          
+          const exactMatchIndex = contentLower.indexOf(normalizedQuery);
+          if (exactMatchIndex !== -1) {
+            // Found exact substring match - use it!
+            matchStart = exactMatchIndex;
+            matchEnd = exactMatchIndex + normalizedQuery.length;
+          } else {
+            // Priority 2: Try to find the best contiguous match from Fuse indices
+            // Find the longest contiguous sequence in the indices
+            let bestMatchStart = contentMatch.indices[0][0];
+            let bestMatchEnd = contentMatch.indices[0][1] + 1;
+            let bestMatchLength = bestMatchEnd - bestMatchStart;
+            
+            for (const [start, end] of contentMatch.indices) {
+              const length = end - start + 1;
+              if (length > bestMatchLength) {
+                bestMatchStart = start;
+                bestMatchEnd = end + 1;
+                bestMatchLength = length;
+              }
+            }
+            
+            matchStart = bestMatchStart;
+            matchEnd = bestMatchEnd;
+          }
 
           // Get context around the match
-          const matchStart = firstMatch[0];
-          const matchEnd = firstMatch[1] + 1;
           const contextBefore = 50;
           const contextAfter = 50;
 
