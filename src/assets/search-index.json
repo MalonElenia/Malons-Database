@@ -5131,6 +5131,13 @@
       "aliases": []
     },
     {
+      "id": "Calculator-Guide",
+      "title": "Calculator-Guide",
+      "content": "Calculator Guide This guide shows you how to add interactive calculators to your markdown notes. Basic Syntax To create a calculator, use a code block with the language: calculator formula: yourformulahere description: What this calculator does inputs: - variable_name: { default: 10, min: 0, max: 100, step: 1 } Result: Example with Multiple Variables: XP Calculator Calculate experience points needed to level up: calculator formula: currentLevel * 1000 + bonus description: Calculate XP required for next level inputs: - currentLevel: { default: 5, min: 1, max: 20, step: 1 } - bonus: { default: 500, min: 0, max: 5000, step: 100 } Result: Example with Decimals: Movement Speed Calculate movement speed with multipliers: calculator formula: baseSpeed * multiplier description: Calculate modified movement speed inputs: - baseSpeed: { default: 30, min: 0, max: 100, step: 5 } - multiplier: { default: 1.5, min: 0.5, max: 3, step: 0.25 } +-/damagePerHitbase_armorlevelDamage Per Hitarmor valuedamage hits + bonus((base + modifier) level) / resistancestep: 1step: 0.25step: 0.5+-/( )abs(x)abs(-5)ceil(x)ceil(4.2)floor(x)floor(4.8)round(x)round(4.5)max(a, b, ...)max(5, 10, 3)min(a, b, ...)min(5, 10, 3)pow(base, exponent)pow(2, 3)sqrt(x)sqrt(16)sin(x)cos(x)tan(x)` - Tangent (angle in radians) Examples with Functions Damage with critical hit (using max): Armor reduction (using floor): Distance calculation (using sqrt and pow):",
+      "path": "Calculator-Guide.md",
+      "aliases": []
+    },
+    {
       "id": "Chinese Folklore Notes",
       "title": "Chinese Folklore Notes",
       "content": "Feat: Corpse Walker Using a bell, hand signs, or spell tags, unburied bodies can be temporarily animated with mana to follow the driver. This is primarily used to bring corpses to sacred burial grounds in a ceremonial way or through prohibitive terrain.",

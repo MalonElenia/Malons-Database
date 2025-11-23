@@ -49,51 +49,84 @@
     @if (config.graph && graphData()) {
       <div class="calculator-graph">
         <h4>Visualization</h4>
-        <svg viewBox="0 0 400 200" class="graph-svg">
+        <div class="graph-container">
+          <svg viewBox="0 0 560 365" preserveAspectRatio="xMidYMid meet" class="graph-svg">
+          <!-- Axes -->
+          <line x1="70" y1="5" x2="70" y2="335" class="axis-line" stroke="#999" stroke-width="2" />
+          <line x1="70" y1="335" x2="540" y2="335" class="axis-line" stroke="#999" stroke-width="2" />
+          
           <!-- Grid lines -->
           <g class="grid">
+            <!-- Y-axis grid lines -->
             @for (yLine of getYGridLines(); track yLine) {
               <line
-                [attr.x1]="0"
-                [attr.y1]="toSvgY(yLine, 200)"
-                [attr.x2]="400"
-                [attr.y2]="toSvgY(yLine, 200)"
+                [attr.x1]="70"
+                [attr.y1]="toSvgY(yLine, 330) + 5"
+                [attr.x2]="540"
+                [attr.y2]="toSvgY(yLine, 330) + 5"
                 class="grid-line"
               />
               <text
-                [attr.x]="5"
-                [attr.y]="toSvgY(yLine, 200) - 3"
+                [attr.x]="65"
+                [attr.y]="toSvgY(yLine, 330) + 10"
                 class="grid-label"
+                text-anchor="end"
               >
                 {{ yLine.toFixed(1) }}
+              </text>
+            }
+            
+            <!-- X-axis grid lines -->
+            @for (xLine of getXGridLines(); track xLine) {
+              <line
+                [attr.x1]="toSvgX(xLine, 470) + 70"
+                [attr.y1]="5"
+                [attr.x2]="toSvgX(xLine, 470) + 70"
+                [attr.y2]="335"
+                class="grid-line"
+              />
+              <text
+                [attr.x]="toSvgX(xLine, 470) + 70"
+                [attr.y]="355"
+                class="grid-label x-label"
+                text-anchor="middle"
+              >
+                {{ xLine.toFixed(0) }}
               </text>
             }
           </g>
 
           <!-- Graph line -->
-          <path
-            [attr.d]="getGraphPath()"
-            class="graph-line"
-            fill="none"
-            stroke="var(--accent-color, #4a9eff)"
-            stroke-width="2"
-          />
-
-          <!-- Current point indicator -->
-          @if (config.inputs && config.inputs.length > 0 && typeof result() === 'number') {
-            <circle
-              [attr.cx]="toSvgX(inputValues()[config.inputs[0].name], 400)"
-              [attr.cy]="toSvgY(getNumericResult(), 200)"
-              r="4"
-              fill="var(--accent-color, #4a9eff)"
-              class="current-point"
+          <g transform="translate(70, 5)">
+            <path
+              [attr.d]="getGraphPath()"
+              class="graph-line"
+              fill="none"
+              stroke="var(--accent-color, #4a9eff)"
+              stroke-width="3"
             />
-          }
+
+            <!-- Current point indicator -->
+            @if (config.inputs && config.inputs.length > 0 && typeof result() === 'number') {
+              <circle
+                [attr.cx]="toSvgX(inputValues()[config.inputs[0].name], 470)"
+                [attr.cy]="toSvgY(getNumericResult(), 330)"
+                r="6"
+                fill="var(--accent-color, #4a9eff)"
+                class="current-point"
+              />
+            }
+          </g>
         </svg>
 
+          @if (config.inputs && config.inputs.length > 0) {
+            <div class="y-axis-label">↑ Result</div>
+          }
+        </div>
+
         @if (config.inputs && config.inputs.length > 0) {
-          <div class="graph-label">
-            {{ config.inputs[0].label }} →
+          <div class="graph-axis-labels">
+            <div class="x-axis-label">{{ config.inputs[0].label }} →</div>
           </div>
         }
       </div>

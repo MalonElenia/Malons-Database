@@ -134,7 +134,8 @@ export class CalculatorComponent implements OnInit {
       return null;
     }
 
-    const points = this.config.graphPoints || 20;
+    // Increased from 20 to 50 for smoother curves
+    const points = this.config.graphPoints || 50;
     const firstInput = this.config.inputs[0];
     const currentValues = this.inputValues();
     const data: { x: number; y: number; label: string }[] = [];
@@ -206,8 +207,8 @@ export class CalculatorComponent implements OnInit {
     const data = this.graphData();
     if (!data || data.length === 0) return '';
 
-    const width = 400;
-    const height = 200;
+    const width = 470;  // 520 - 40 (left margin) - 10 (right padding)
+    const height = 330; // 380 - 50 (bottom for X labels)
 
     const points = data.map(d => ({
       x: this.toSvgX(d.x, width),
@@ -230,9 +231,9 @@ export class CalculatorComponent implements OnInit {
   protected getYGridLines(): number[] {
     const { minY, maxY } = this.getGraphBounds();
     const range = maxY - minY;
-    const step = range / 5; // 5 grid lines
+    const step = range / 6; // 6 grid lines for cleaner look
 
-    return [0, 1, 2, 3, 4, 5].map(i => minY + (step * i));
+    return [0, 1, 2, 3, 4, 5, 6].map(i => minY + (step * i));
   }
 
   /**
@@ -245,9 +246,9 @@ export class CalculatorComponent implements OnInit {
     const minX = data[0].x;
     const maxX = data[data.length - 1].x;
     const range = maxX - minX;
-    const step = range / 5; // 5 grid lines
+    const step = range / 6; // 6 grid lines for cleaner look
 
-    return [0, 1, 2, 3, 4, 5].map(i => minX + (step * i));
+    return [0, 1, 2, 3, 4, 5, 6].map(i => minX + (step * i));
   }
 
   /**
