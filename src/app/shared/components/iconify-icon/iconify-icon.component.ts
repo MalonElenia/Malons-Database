@@ -1,5 +1,6 @@
 import { Component, Input, CUSTOM_ELEMENTS_SCHEMA, OnInit, AfterViewInit, OnChanges, SimpleChanges, ElementRef, ChangeDetectorRef, inject } from '@angular/core';
 import { IconService } from '../../../core/services/icon.service';
+import { IconifyLoadingService } from '../../../core/services/iconify-loading.service';
 
 /**
  * Angular wrapper component for Iconify web component
@@ -51,6 +52,7 @@ import { IconService } from '../../../core/services/icon.service';
 })
 export class IconifyIconComponent implements OnInit, AfterViewInit, OnChanges {
   private readonly iconService = inject(IconService);
+  private readonly iconifyLoadingService = inject(IconifyLoadingService);
   private readonly elementRef = inject(ElementRef);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -84,7 +86,7 @@ export class IconifyIconComponent implements OnInit, AfterViewInit, OnChanges {
 
   ngOnInit(): void {
     // Wait for Iconify to be ready before initializing
-    this.waitForIconify().then(() => {
+    this.iconifyLoadingService.waitForIconify().then(() => {
       this.initializeIcon();
     });
   }
@@ -148,13 +150,11 @@ export class IconifyIconComponent implements OnInit, AfterViewInit, OnChanges {
    * - Falls back to default icon if none work
    */
   private tryNextIconCandidate(iconElement: HTMLElement): void {
-    // Give the current icon time to load (50ms for first attempt, longer for retries)
+    // NECESSARY: Give icon time to load asynchronously (50ms for first attempt, longer for retries)
     const delay = this.retryCount === 0 ? 50 : this.RETRY_DELAYS[this.retryCount - 1] || 1000;
     
-    setTimeout(() => {
-      const hasSvg = iconElement.shadowRoot?.querySelector('svg');
-      
-      if (!hasSvg) {
+    this.iconifyLoadingService.checkIconLoaded(iconElement, delay, (loaded) => {
+      if (!loaded) {
         // Current icon failed to load - try retry logic first
         if (this.retryCount < this.MAX_RETRIES) {
           // Retry the same icon (handles transient network failures)
@@ -175,7 +175,7 @@ export class IconifyIconComponent implements OnInit, AfterViewInit, OnChanges {
           // Trigger Angular change detection to update the template
           this.cdr.detectChanges();
           
-          // Recursively try next candidate (minimal delay)
+          // NECESSARY: Brief delay before checking next candidate (20ms)
           setTimeout(() => this.tryNextIconCandidate(iconElement), 20);
         } else {
           // All candidates failed
@@ -204,7 +204,7 @@ export class IconifyIconComponent implements OnInit, AfterViewInit, OnChanges {
           }
         }
       }
-    }, delay);
+    });
   }
 
   /**
@@ -240,41 +240,6 @@ export class IconifyIconComponent implements OnInit, AfterViewInit, OnChanges {
     return typeof this.size === 'number' ? `${this.size}` : this.size;
   }
 
-  /**
-   * Waits for Iconify web component to be fully defined
-   * Prevents race conditions where Angular tries to use icons before Iconify is ready
-   * 
-   * @returns Promise that resolves when Iconify is ready
-   */
-  private waitForIconify(): Promise<void> {
-    return new Promise((resolve) => {
-      // Check if we're on the server (SSR)
-      if (typeof window === 'undefined' || typeof customElements === 'undefined') {
-        resolve();
-        return;
-      }
-
-      // Check if iconify-icon web component is already defined
-      if (customElements.get('iconify-icon')) {
-        resolve();
-        return;
-      }
-
-      // Wait for iconify-icon to be defined (with timeout)
-      const timeout = setTimeout(() => {
-        console.warn('Iconify web component took too long to load');
-        resolve(); // Resolve anyway to prevent blocking
-      }, 5000);
-
-      customElements.whenDefined('iconify-icon').then(() => {
-        clearTimeout(timeout);
-        resolve();
-      }).catch(() => {
-        clearTimeout(timeout);
-        console.warn('Failed to load Iconify web component');
-        resolve();
-      });
-    });
-  }
+  // Iconify loading logic moved to shared IconifyLoadingService
 }
 

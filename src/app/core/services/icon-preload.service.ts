@@ -95,10 +95,11 @@ export class IconPreloadService {
         }
       );
 
-      // Wait for all preloads to complete (with timeout)
+      // NECESSARY: Wait for all preloads to complete with 2s timeout as safety mechanism
+      // Prevents blocking app initialization if icon API is slow or unresponsive
       await Promise.race([
         Promise.all(preloadPromises),
-        new Promise(resolve => setTimeout(resolve, 2000)), // 2s timeout
+        new Promise(resolve => setTimeout(resolve, 2000)),
       ]);
 
       console.log('%c✓ Icon preloading complete', 'color: #4CAF50; font-weight: bold;');
@@ -129,7 +130,7 @@ export class IconPreloadService {
 
       document.body.appendChild(container);
       
-      // Give icons time to load
+      // NECESSARY: Give icons time to load asynchronously before cleanup (500ms for multiple icons)
       setTimeout(() => {
         document.body.removeChild(container);
         resolve();

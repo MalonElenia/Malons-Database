@@ -390,20 +390,27 @@ export class MarkdownService {
     // Parse markdown to HTML
     let html = marked.parse(processedWithColors) as string;
 
-    // Post-process: Convert custom icon syntax to Font Awesome icons
+    // Post-process: Convert custom icon syntax to placeholder elements with data attributes
+    // These will be converted to Iconify icons by the InlineIconDirective after Angular renders
     // Syntax: :icon:icon-name: or :icon:icon-name|size: or :icon:icon-name|size|color:
+    // Also supports Iconify format: :icon:library:icon-name: or :icon:library:icon-name|size:
     // Examples: 
-    //   :icon:sword: -> <i class="fas fa-sword"></i>
-    //   :icon:heart|24: -> <i class="fas fa-heart" style="font-size: 24px;"></i>
-    //   :icon:star|20|gold: -> <i class="fas fa-star" style="font-size: 20px; color: gold;"></i>
-    const iconRegex = /:icon:([a-z0-9-]+)(?:\|(\d+))?(?:\|([a-z#0-9]+))?:/gi;
+    //   :icon:GiSword: -> <span class="inline-icon" data-icon="GiSword"></span>
+    //   :icon:game-icons:sword: -> <span class="inline-icon" data-icon="game-icons:sword"></span>
+    //   :icon:LuHeart|24: -> <span class="inline-icon" data-icon="LuHeart" data-size="24"></span>
+    //   :icon:heart|20|gold: -> <span class="inline-icon" data-icon="heart" data-size="20" data-color="gold"></span>
+    // 
+    // Design decision: Use data attributes instead of direct rendering to enable Iconify support
+    // This allows IconService to convert prefixes (GiSword → game-icons:sword) with fallback support
+    // Pattern matches wiki-links which also use data attributes + directive post-processing
+    // Pattern captures: icon name (with optional colon for Iconify format), size (optional), color (optional)
+    const iconRegex = /:icon:([a-zA-Z0-9-]+(?::[a-zA-Z0-9-]+)?)(?:\|(\d+))?(?:\|([a-z#0-9]+))?:/gi;
     
     html = html.replace(iconRegex, (match, iconName, size, color) => {
-      const sizeStyle = size ? `font-size: ${size}px;` : '';
-      const colorStyle = color ? `color: ${color};` : '';
-      const combinedStyle = (sizeStyle || colorStyle) ? ` style="${sizeStyle} ${colorStyle}"` : '';
+      const sizeAttr = size ? ` data-size="${size}"` : '';
+      const colorAttr = color ? ` data-color="${color}"` : '';
       
-      return `<i class="fas fa-${iconName}"${combinedStyle}></i>`;
+      return `<span class="inline-icon" data-icon="${iconName}"${sizeAttr}${colorAttr}></span>`;
     });
 
     return html;

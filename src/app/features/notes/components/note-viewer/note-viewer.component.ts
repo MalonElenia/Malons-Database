@@ -20,6 +20,7 @@ import { ActivatedRoute } from '@angular/router';
 import { DomSanitizer, SafeHtml, Meta, Title } from '@angular/platform-browser';
 import { MarkdownService, SearchService, ProjectConfigService } from '../../../../core/services';
 import { WikiLinkDirective } from '../wiki-link.directive';
+import { InlineIconDirective } from '../inline-icon.directive';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { IconifyIconComponent } from '../../../../shared/components/iconify-icon/iconify-icon.component';
 import { CalculatorComponent } from '../../../../shared/components/calculator/calculator.component';
@@ -31,14 +32,15 @@ import { CalculatorComponent } from '../../../../shared/components/calculator/ca
  * - Listens to route parameters to load the correct note
  * - Renders HTML directly, bypassing sanitizer for trusted markdown content
  * - WikiLinkDirective handles hover previews and click navigation
+ * - InlineIconDirective converts inline icon placeholders to Iconify icons
  * - Handles note loading states
  * - Implements fade-in/fade-out transitions between notes
- * - Uses DomSanitizer.bypassSecurityTrustHtml to preserve data-* attributes needed for wiki-links
+ * - Uses DomSanitizer.bypassSecurityTrustHtml to preserve data-* attributes needed for wiki-links and icons
  * - Dynamically renders calculator components from markdown placeholders
  */
 @Component({
   selector: 'app-note-viewer',
-  imports: [CommonModule, WikiLinkDirective, IconifyIconComponent],
+  imports: [CommonModule, WikiLinkDirective, InlineIconDirective, IconifyIconComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './note-viewer.component.html',
   styleUrl: './note-viewer.component.scss',
@@ -70,12 +72,13 @@ export class NoteViewerComponent implements OnInit, AfterViewChecked {
 
   constructor() {
     // Use effect to watch for content changes and render calculators
+    // queueMicrotask ensures DOM is updated before processing (replaces arbitrary 100ms setTimeout)
     effect(() => {
       const content = this.rawContent();
       if (content && content !== this.lastProcessedContent) {
         this.lastProcessedContent = content;
-        // Use setTimeout to ensure DOM is updated
-        setTimeout(() => this.renderCalculatorComponents(), 100);
+        // queueMicrotask defers to next microtask, after DOM updates are applied
+        queueMicrotask(() => this.renderCalculatorComponents());
       }
     });
   }
@@ -159,7 +162,8 @@ export class NoteViewerComponent implements OnInit, AfterViewChecked {
     // Fade out current content FIRST (before changing anything)
     this.contentVisible.set(false);
 
-    // Track when fade-out completes (matches CSS transition duration)
+    // NECESSARY: Track when fade-out animation completes (matches CSS transition duration of 150ms)
+    // This ensures smooth visual transition before swapping content
     const fadeOutComplete = new Promise<void>(resolve => setTimeout(resolve, 150));
     
     // Start loading content immediately (in parallel with fade-out)
@@ -200,10 +204,10 @@ export class NoteViewerComponent implements OnInit, AfterViewChecked {
         this.rawContent.set(loadedHtml);
         this.updateMetaDescription(loadedTextContent);
 
-        // Brief delay to ensure DOM is updated, then fade in
-        setTimeout(() => {
+        // queueMicrotask ensures DOM update is complete before fading in (replaces arbitrary 50ms setTimeout)
+        queueMicrotask(() => {
           this.contentVisible.set(true);
-        }, 50);
+        });
       })
       .catch((err) => {
         this.error.set(`Failed to load note: ${err.message}`);

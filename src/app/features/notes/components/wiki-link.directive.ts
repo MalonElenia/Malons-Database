@@ -12,6 +12,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { MarkdownService } from '../../../core/services';
 import { IconService } from '../../../core/services/icon.service';
+import { IconifyLoadingService } from '../../../core/services/iconify-loading.service';
 
 /**
  * Directive that adds hover preview and click navigation to wiki-links
@@ -33,6 +34,7 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly markdownService = inject(MarkdownService);
   private readonly iconService = inject(IconService);
+  private readonly iconifyLoadingService = inject(IconifyLoadingService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
@@ -61,8 +63,9 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
     // Set up mutation observer to watch for content changes
     this.setupMutationObserver();
 
-    // Setup listeners again after view init in case content is already there
-    setTimeout(() => this.setupWikiLinkHoverListeners(), 0);
+    // Setup listeners after view init in case content is already there
+    // Use queueMicrotask for next-tick execution (replaces setTimeout(..., 0))
+    queueMicrotask(() => this.setupWikiLinkHoverListeners());
   }
 
   ngOnDestroy(): void {
@@ -227,14 +230,13 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
     // Set the current candidate
     iconElement.setAttribute('icon', candidates[index]);
 
-    // Check if this icon loads successfully after a short delay (50ms)
-    setTimeout(() => {
-      const hasSvg = iconElement.shadowRoot?.querySelector('svg');
-      if (!hasSvg && index + 1 < candidates.length) {
+    // NECESSARY: Check icon loading after short delay - Iconify loads icons asynchronously
+    this.iconifyLoadingService.checkIconLoaded(iconElement, 50, (loaded) => {
+      if (!loaded && index + 1 < candidates.length) {
         // This candidate failed, try the next one
         this.tryWikiIconCandidates(iconElement, candidates, index + 1);
       }
-    }, 50);
+    });
   }
 
   /**
@@ -254,14 +256,13 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
     // Set the current candidate
     iconElement.setAttribute('icon', candidates[index]);
 
-    // Check if this icon loads successfully after a short delay (50ms)
-    setTimeout(() => {
-      const hasSvg = iconElement.shadowRoot?.querySelector('svg');
-      if (!hasSvg && index + 1 < candidates.length) {
+    // NECESSARY: Check icon loading after short delay - Iconify loads icons asynchronously
+    this.iconifyLoadingService.checkIconLoaded(iconElement, 50, (loaded) => {
+      if (!loaded && index + 1 < candidates.length) {
         // This candidate failed, try the next one
         this.tryPreviewIconCandidates(iconElement, candidates, index + 1);
       }
-    }, 50);
+    });
   }
 
   /**
@@ -274,11 +275,12 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
       this.removeTimeout = null;
     }
 
-    // Delay showing the preview slightly
+    // NECESSARY: Delay showing preview to prevent accidental triggers (UX feature)
+    // Reduced from 300ms to 200ms for snappier feel
     this.hoverTimeout = setTimeout(() => {
       this.currentHoverTarget = linkElement;
       this.showPreview(linkElement);
-    }, 300);
+    }, 200);
   }
 
   /**
@@ -295,7 +297,7 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
     // Find which preview (if any) contains this link
     const containingPreview = this.findContainingPreview(linkElement);
 
-    // Delay removing the preview to allow moving mouse to preview
+    // NECESSARY: Delay removing preview to allow mouse movement from link to preview (UX feature)
     this.removeTimeout = setTimeout(() => {
       // Check if mouse is currently over any preview
       if (this.isMouseOverAnyPreview()) {
@@ -412,7 +414,7 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
       (event: MouseEvent) => {
         this.mouseInsidePreview = null;
 
-        // Delay hiding to check if mouse is moving to a nested preview
+        // NECESSARY: Delay hiding to check if mouse is moving to a nested preview (UX feature)
         this.removeTimeout = setTimeout(() => {
           // Check if mouse moved into a nested preview
           const previewIndex = this.previewElements.indexOf(preview);
@@ -520,6 +522,12 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
           // Apply additional styling to the preview content
           this.applyPreviewStyling(contentElement);
 
+          // Process inline icons in the preview content after ensuring Iconify is ready
+          this.iconifyLoadingService.executeWhenReady(
+            () => this.processInlineIconsInPreview(contentElement),
+            0
+          );
+
           this.renderer.appendChild(preview, contentElement);
 
           // Now that content is loaded, append preview to body with animation
@@ -584,7 +592,7 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
               if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', appendToBody, { once: true });
               } else {
-                // Fallback: try again after a short delay
+                // NECESSARY: Fallback for edge case where body doesn't exist yet
                 setTimeout(appendToBody, 10);
               }
             }
@@ -1065,5 +1073,58 @@ export class WikiLinkDirective implements OnInit, AfterViewInit, OnDestroy {
 
     // Remove all listeners
     this.cleanupListeners();
+  }
+
+  /**
+   * Processes inline icon placeholders in preview content
+   * Converts <span class="inline-icon"> elements to iconify-icon web components
+   * 
+   * @param contentElement - The preview content container
+   */
+  private processInlineIconsInPreview(contentElement: HTMLElement): void {
+    const iconPlaceholders = contentElement.querySelectorAll('.inline-icon');
+    
+    iconPlaceholders.forEach((element: Element) => {
+      const placeholder = element as HTMLElement;
+      
+      // Skip if already processed
+      if (placeholder.hasAttribute('data-processed')) {
+        return;
+      }
+      
+      placeholder.setAttribute('data-processed', 'true');
+      
+      const iconName = placeholder.getAttribute('data-icon');
+      const size = placeholder.getAttribute('data-size') || '';
+      const color = placeholder.getAttribute('data-color') || '';
+      
+      if (!iconName) {
+        return;
+      }
+      
+      // Convert icon name using IconService
+      const iconifyName = this.iconService.convertToIconifyFormat(iconName);
+      if (!iconifyName) {
+        return; // Skip if invalid icon
+      }
+      
+      // Create iconify-icon element
+      const iconElement = document.createElement('iconify-icon');
+      iconElement.setAttribute('icon', iconifyName);
+      
+      const sizeValue = size ? `${size}px` : '1em';
+      iconElement.setAttribute('width', sizeValue);
+      iconElement.setAttribute('height', sizeValue);
+      
+      const colorValue = color || 'currentColor';
+      iconElement.style.color = colorValue;
+      iconElement.style.display = 'inline-flex';
+      iconElement.style.verticalAlign = 'middle';
+      iconElement.style.alignItems = 'center';
+      iconElement.style.justifyContent = 'center';
+      
+      // Replace placeholder
+      placeholder.replaceWith(iconElement);
+    });
   }
 }
